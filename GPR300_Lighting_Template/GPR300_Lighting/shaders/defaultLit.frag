@@ -23,7 +23,7 @@ void main(){
     float diffuseDot = max(dot(_LightDir, Normal), 0);
     vec3 diffuse = (_DiffuseK * diffuseDot * _LightIntensity) * _LightColor;
 
-    vec3 halfway = normalize(normalize(WorldPos - _CameraPos) + normalize(-_LightDir));
+    vec3 halfway = normalize(normalize(_CameraPos - WorldPos) + normalize(_LightDir));
     float specularDot = max(dot(Normal, halfway), 0);
     vec3 specular = (_SpecularK * pow(specularDot, _Shininess) * _LightIntensity) * _LightColor;
 
