@@ -84,13 +84,15 @@ struct SpotLight
 	glm::vec3 color;
 	float intensity;
 	float radius;
+	float innerAngle;
+	float outerAngle;
 };
 
 DirectionalLight dirLight;
 SpotLight spotLight;
 PointLight pointLights[3];
 float pointLightIntensity = 0.5;
-float range = 1;
+float range = 10;
 float orbit = 3;
 
 int main() {
@@ -203,7 +205,8 @@ int main() {
 	spotLight.color = glm::vec3(1);
 	spotLight.intensity = 1;
 	spotLight.direction = glm::vec3(0, 1, 0);
-	spotLight.radius = 12.5;
+	spotLight.innerAngle = 1.0;
+	spotLight.outerAngle = 10.0;
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -233,6 +236,7 @@ int main() {
 		for (int i = 0; i < numPointLights; i++)
 		{
 			pointLights[i].intensity = pointLightIntensity;
+			pointLights[i].range = range;
 			litShader.setVec3("_PointLights[" + std::to_string(i) + "].position", pointLights[i].position);
 			litShader.setVec3("_PointLights[" + std::to_string(i) + "].color", pointLights[i].color);
 			litShader.setFloat("_PointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
@@ -259,6 +263,8 @@ int main() {
 		litShader.setVec3("_SpotLight.color", spotLight.color);
 		litShader.setFloat("_SpotLight.intensity", spotLight.intensity);
 		litShader.setFloat("_SpotLight.radius", spotLight.radius);
+		litShader.setFloat("_SpotLight.innerAngle", cos(glm::radians(spotLight.innerAngle)));
+		litShader.setFloat("_SpotLight.outerAngle", cos(glm::radians(spotLight.outerAngle)));
 
 		litShader.setVec3("_CameraPos", camera.getPosition());
 		litShader.setFloat("_AmbientK", ambientK);
@@ -321,7 +327,8 @@ int main() {
 			ImGui::DragFloat3("Spot Light Direction", &spotLight.direction.x);
 			ImGui::DragFloat3("Spot Light Position", &spotLight.position.x);
 			ImGui::SliderFloat("Spot Light Intensity", &spotLight.intensity, 0, 1);
-			ImGui::SliderFloat("Spot Light Radius", &spotLight.radius, 1, 30);
+			ImGui::SliderFloat("Inner Angle", &spotLight.innerAngle, 1, 360);
+			ImGui::SliderFloat("Outer Angle", &spotLight.outerAngle, 1, 360);
 		}
 
 		ImGui::End();

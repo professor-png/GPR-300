@@ -38,6 +38,8 @@ struct SpotLight
     vec3 color;
     float intensity;
     float radius;
+    float innerAngle;
+    float outerAngle;
 };
 
 uniform DirectionalLight _DirLight;
@@ -103,21 +105,17 @@ vec3 CalculatePointLights(PointLight[3] lights, vec3 worldNormal)
 
 vec3 CalculateSpotLight(SpotLight light, vec3 worldNormal)
 {
-    vec3 dFrag = normalize(light.position - _Color);
+    float theta = dot(normalize(vs_out.WorldPosition - light.position), normalize(-light.direction));
 
-    float angle = dot(normalize(light.direction), dFrag);
-
-    float theta = dot(normalize(light.position - vs_out.WorldPosition), normalize(light.direction));
-
-    if (theta < cos(radians(light.radius)))
+    if (theta < light.outerAngle)
         return vec3(0);
 
-    float newIntensity = light.intensity + pow((theta - radians(light.radius)) / (0 - radians(light.radius)), theta);
+    float newIntensity = light.intensity * ((theta - light.outerAngle) / (light.innerAngle - light.outerAngle));
 
     vec3 ambient = CalculateAmbient(newIntensity, light.color);
-    vec3 diffuse = CalculateDiffuse(newIntensity, light.color, light.direction, worldNormal);
+    vec3 diffuse = CalculateDiffuse(newIntensity, light.color, normalize(light.direction), worldNormal);
 
-    vec3 specular = CalculateSpecular(newIntensity, light.color, light.direction, worldNormal);
+    vec3 specular = CalculateSpecular(newIntensity, light.color, normalize(light.direction), worldNormal);
 
     return ambient + diffuse + specular;
 }
@@ -130,5 +128,3 @@ void main()
 
     FragColor = vec4(_Color * lightColor,1.0f);
 }
-
-//(_SpecularK * pow(dot(reflect(normalize(vPos - _LightPos), vNormal), _CameraPos), _Shininess) * _LightIntensity) * _LightColor; //point light
