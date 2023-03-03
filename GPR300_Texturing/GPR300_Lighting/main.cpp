@@ -166,6 +166,7 @@ int main() {
 	//texture stuff
 	GLuint texture = NULL;
 	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
 	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
 	texture = createTexture(TEXTURE_FILE);
 
@@ -187,13 +188,12 @@ int main() {
 
 		//Texture stuff
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
 		
 		//_GrassTexture sampler2D uniform will use texture in unlit 0
 		litShader.setInt("_GrassTexture", 0);
 
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(0);
+		/*glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(0);*/
 
 		//Draw
 		litShader.use();
@@ -254,6 +254,7 @@ int main() {
 	glfwTerminate();
 	return 0;
 }
+
 //Author: Sam Fox
 GLuint createTexture(const char* filePath)
 {

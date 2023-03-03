@@ -13,7 +13,6 @@ out struct Vertex
     vec3 WorldPosition;
 }vs_out;
 
-out vec3 Normal;
 out vec2 UV;
 
 void main(){    

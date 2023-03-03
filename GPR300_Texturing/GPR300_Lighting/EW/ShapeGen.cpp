@@ -216,7 +216,7 @@ namespace ew {
 
 		//VERTICES
 		//Top cap (facing up)
-		meshData.vertices.push_back(Vertex(glm::vec3(0, halfHeight, 0), glm::vec3(0, 1, 0), glm::vec2(0, 1)));
+		meshData.vertices.push_back(Vertex(glm::vec3(0, halfHeight, 0), glm::vec3(0, 1, 0), glm::vec2(0.5, 0.5)));
 		for (int i = 0; i <= numSegments; i++)
 		{
 			glm::vec3 pos = glm::vec3(
@@ -224,13 +224,13 @@ namespace ew {
 				halfHeight,
 				sin(i * thetaStep) * radius
 			);
-			glm::vec2 uv = glm::vec2(atan(pos.z / pos.x) / (glm::pi<float>() * 2.0f), pos.y);
+			glm::vec2 uv = glm::vec2((1 + cos(i * thetaStep)) / 2, (1 + sin(i * thetaStep)) / 2);
 
 			meshData.vertices.push_back(Vertex(pos, glm::vec3(0, 1, 0), uv));
 		}
 
 		//Bottom cap (facing down)
-		meshData.vertices.push_back(Vertex(glm::vec3(0, -halfHeight, 0), glm::vec3(0, -1, 0), glm::vec2(0, -1)));
+		meshData.vertices.push_back(Vertex(glm::vec3(0, -halfHeight, 0), glm::vec3(0, -1, 0), glm::vec2(0.5, 0.5)));
 		unsigned int bottomCenterIndex = (unsigned int)meshData.vertices.size() - 1;
 		for (int i = 0; i <= numSegments; i++)
 		{
@@ -239,7 +239,7 @@ namespace ew {
 				-halfHeight,
 				sin(i * thetaStep) * radius
 			);
-			glm::vec2 uv = glm::vec2(atan(pos.z / pos.x) / (glm::pi<float>() * 2.0f), pos.y);
+			glm::vec2 uv = glm::vec2((1 + cos(i * thetaStep)) / 2, (1 + sin(i * thetaStep)) / 2);
 
 			meshData.vertices.push_back(Vertex(pos, glm::vec3(0, -1, 0), uv));
 		}
@@ -251,7 +251,7 @@ namespace ew {
 		{
 			glm::vec3 pos = meshData.vertices[i + 1].position;
 			glm::vec3 normal = glm::normalize((pos - meshData.vertices[0].position));
-			glm::vec2 uv = glm::vec2(atan(pos.z / pos.x) / (glm::pi<float>() * 2.0f), pos.y);
+			glm::vec2 uv = glm::vec2(((atan2(sin(i * thetaStep + glm::pi<float>()), cos(i * thetaStep + glm::pi<float>())) / (glm::pi<float>() * 2.0f)) + .5), 1);
 			meshData.vertices.push_back(Vertex(pos, normal, uv));
 		}
 		//Side bottom ring
@@ -259,7 +259,7 @@ namespace ew {
 		{
 			glm::vec3 pos = meshData.vertices[bottomCenterIndex + i + 1].position;
 			glm::vec3 normal = glm::normalize((pos - meshData.vertices[bottomCenterIndex].position));
-			glm::vec2 uv = glm::vec2(atan(pos.z / pos.x) / (glm::pi<float>() * 2.0f), pos.y);
+			glm::vec2 uv = glm::vec2(((atan2(sin(i * thetaStep + glm::pi<float>()), cos(i * thetaStep + glm::pi<float>())) / (glm::pi<float>() * 2.0f)) + .5), 0);
 			meshData.vertices.push_back(Vertex(pos, normal, uv));
 		}
 
