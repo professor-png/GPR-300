@@ -24,6 +24,7 @@
 
 #include <iostream>
 
+GLuint createTexture(const char* filePath);
 void processInput(GLFWwindow* window);
 void resizeFrameBufferCallback(GLFWwindow* window, int width, int height);
 void keyboardCallback(GLFWwindow* window, int keycode, int scancode, int action, int mods);
@@ -58,7 +59,6 @@ float ambientK = 0.5;
 float diffuseK = 0.5;
 float specularK = 0.5;
 float shininess = 250;
-int numPointLights = 0;
 
 bool wireFrame = false;
 
@@ -69,31 +69,9 @@ struct DirectionalLight
 	float intensity = 0;
 };
 
-struct PointLight
-{
-	glm::vec3 position;
-	glm::vec3 color;
-	float intensity;
-	float range;
-};
-
-struct SpotLight
-{
-	glm::vec3 position;
-	glm::vec3 direction;
-	glm::vec3 color;
-	float intensity;
-	float radius;
-	float innerAngle;
-	float outerAngle;
-};
-
 DirectionalLight dirLight;
-SpotLight spotLight;
-PointLight pointLights[3];
-float pointLightIntensity = 0.5;
-float range = 10;
-float orbit = 3;
+
+const char* TEXTURE_FILE = "Grass.jpg";
 
 int main() {
 	if (!glfwInit()) {
@@ -185,28 +163,14 @@ int main() {
 	dirLight.direction = glm::vec3(0, 1, 0);
 	dirLight.intensity = 0.5;
 
-	pointLights[0].position = glm::vec3(0, 5, 0);
-	pointLights[1].position = glm::vec3(0, 5, 0);
-	pointLights[2].position = glm::vec3(0, 5, 0);
+	//texture stuff
+	GLuint texture = NULL;
+	glGenTextures(1, &texture);
+	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
+	texture = createTexture(TEXTURE_FILE);
 
-	pointLights[0].intensity = pointLightIntensity;
-	pointLights[1].intensity = pointLightIntensity;
-	pointLights[2].intensity = pointLightIntensity;
-
-	pointLights[0].color = glm::vec3(1, 0, 0);
-	pointLights[1].color = glm::vec3(0, 1, 0);
-	pointLights[2].color = glm::vec3(0, 0, 1);
-
-	pointLights[0].range = range;
-	pointLights[1].range = range;
-	pointLights[2].range = range;
-
-	spotLight.position = glm::vec3(0, 5, 0);
-	spotLight.color = glm::vec3(1);
-	spotLight.intensity = 1;
-	spotLight.direction = glm::vec3(0, 1, 0);
-	spotLight.innerAngle = 1.0;
-	spotLight.outerAngle = 10.0;
+	if (texture == NULL)
+		std::cout << "Failed to load texture!" << std::endl;
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -221,6 +185,16 @@ int main() {
 		deltaTime = time - lastFrameTime;
 		lastFrameTime = time;
 
+		//Texture stuff
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		
+		//_GrassTexture sampler2D uniform will use texture in unlit 0
+		litShader.setInt("_GrassTexture", 0);
+
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(0);
+
 		//Draw
 		litShader.use();
 		litShader.setMat4("_Projection", camera.getProjectionMatrix());
@@ -231,40 +205,6 @@ int main() {
 		litShader.setVec3("_DirLight.direction", glm::normalize(dirLight.direction));
 		litShader.setVec3("_DirLight.color", dirLight.color);
 		litShader.setFloat("_DirLight.intensity", dirLight.intensity);
-
-		//Point Lights
-		for (int i = 0; i < numPointLights; i++)
-		{
-			pointLights[i].intensity = pointLightIntensity;
-			pointLights[i].range = range;
-			litShader.setVec3("_PointLights[" + std::to_string(i) + "].position", pointLights[i].position);
-			litShader.setVec3("_PointLights[" + std::to_string(i) + "].color", pointLights[i].color);
-			litShader.setFloat("_PointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
-			litShader.setFloat("_PointLights[" + std::to_string(i) + "].range", pointLights[i].range);
-		}
-		litShader.setInt("numPointLights", numPointLights);
-
-		pointLights[0].position.x = sin(time) * orbit;
-		pointLights[0].position.z = cos(time) * orbit;
-
-		pointLights[1].position.x = -sin(time) * orbit;
-		pointLights[1].position.z = -cos(time) * orbit;
-
-		pointLights[2].position.x = cos(time) * orbit;
-		pointLights[2].position.z = cos(time) * orbit;
-
-		lightTransform[0].position = pointLights[0].position;
-		lightTransform[1].position = pointLights[1].position;
-		lightTransform[2].position = pointLights[2].position;
-
-		//spot light
-		litShader.setVec3("_SpotLight.position", spotLight.position);
-		litShader.setVec3("_SpotLight.direction", spotLight.direction);
-		litShader.setVec3("_SpotLight.color", spotLight.color);
-		litShader.setFloat("_SpotLight.intensity", spotLight.intensity);
-		litShader.setFloat("_SpotLight.radius", spotLight.radius);
-		litShader.setFloat("_SpotLight.innerAngle", cos(glm::radians(spotLight.innerAngle)));
-		litShader.setFloat("_SpotLight.outerAngle", cos(glm::radians(spotLight.outerAngle)));
 
 		litShader.setVec3("_CameraPos", camera.getPosition());
 		litShader.setFloat("_AmbientK", ambientK);
@@ -288,17 +228,6 @@ int main() {
 		litShader.setMat4("_Model", planeTransform.getModelMatrix());
 		planeMesh.draw();
 
-		//Draw light as a small sphere using unlit shader, ironically.
-		for (int i = 0; i < numPointLights; i++)
-		{
-			unlitShader.use();
-			unlitShader.setMat4("_Projection", camera.getProjectionMatrix());
-			unlitShader.setMat4("_View", camera.getViewMatrix());
-			unlitShader.setMat4("_Model", lightTransform[i].getModelMatrix());
-			unlitShader.setVec3("_Color", pointLights[i].color);
-			sphereMesh.draw();
-		}
-
 		//Draw UI
 		ImGui::Begin("Settings");
 		ImGui::SliderFloat("Material Ambient K", &ambientK, 0, 1);
@@ -313,24 +242,6 @@ int main() {
 			ImGui::SliderFloat("Directional Light Intensity", &dirLight.intensity, 0, 1);
 		}
 
-		ImGui::SliderInt("Number of Point Lights", &numPointLights, 0, 3);
-
-		if (ImGui::CollapsingHeader("Point Light"))
-		{
-			ImGui::SliderFloat("Point Light Intensity", &pointLightIntensity, 0, 1);
-			ImGui::SliderFloat("Orbit Range", &orbit, 1, 5);
-			ImGui::SliderFloat("Range", &range, 0.1, 10);
-		}
-
-		if (ImGui::CollapsingHeader("Spot Light"))
-		{
-			ImGui::DragFloat3("Spot Light Direction", &spotLight.direction.x);
-			ImGui::DragFloat3("Spot Light Position", &spotLight.position.x);
-			ImGui::SliderFloat("Spot Light Intensity", &spotLight.intensity, 0, 1);
-			ImGui::SliderFloat("Inner Angle", &spotLight.innerAngle, 1, 360);
-			ImGui::SliderFloat("Outer Angle", &spotLight.outerAngle, 1, 360);
-		}
-
 		ImGui::End();
 
 		ImGui::Render();
@@ -343,6 +254,33 @@ int main() {
 	glfwTerminate();
 	return 0;
 }
+//Author: Sam Fox
+GLuint createTexture(const char* filePath)
+{
+	//Load texture data as file
+	int width = 512, height = 512, numComponents = 4;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* textureData = stbi_load(filePath, &width, &height, &numComponents, 0);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+
+	//wrap horizontally
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+	//clamp vertically
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+	//when magnifying use nearest neighbor sampling
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	//when minifying use bilinear sampling
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	return GL_TEXTURE_2D;
+}
+
 //Author: Eric Winebrenner
 void resizeFrameBufferCallback(GLFWwindow* window, int width, int height)
 {

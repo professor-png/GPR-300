@@ -20,5 +20,7 @@ void main(){
     vs_out.WorldNormal = mat3(transpose(inverse(_Model))) * vNormal;
     vs_out.WorldPosition = vec3(_Model * vec4(vPos, 1));
 
+    UV = vTexCoord;
+
     gl_Position = _Projection * _View * _Model * vec4(vPos,1);
 }
