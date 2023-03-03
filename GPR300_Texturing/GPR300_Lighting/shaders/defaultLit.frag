@@ -67,5 +67,5 @@ void main()
     vec3 lightColor = CalculateDirectionalLight(_DirLight, normal);
 
     //FragColor = vec4(_Color * lightColor,1.0f);
-    FragColor = texture(_GrassTexture, (UV) * vec2(0));// * vec4(_Color * lightColor, 1.0f);
+    FragColor = color;// * vec4(_Color * lightColor, 1.0f);
 }

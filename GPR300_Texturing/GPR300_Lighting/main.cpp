@@ -166,6 +166,7 @@ int main() {
 	//texture stuff
 	GLuint texture = NULL;
 	glGenTextures(1, &texture);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
 	texture = createTexture(TEXTURE_FILE);
@@ -187,7 +188,8 @@ int main() {
 		lastFrameTime = time;
 
 		//Texture stuff
-		glActiveTexture(GL_TEXTURE0);
+		//glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
 		
 		//_GrassTexture sampler2D uniform will use texture in unlit 0
 		litShader.setInt("_GrassTexture", 0);
@@ -251,6 +253,8 @@ int main() {
 		glfwSwapBuffers(window);
 	}
 
+	glDeleteTextures(1, &texture);
+
 	glfwTerminate();
 	return 0;
 }
@@ -259,11 +263,9 @@ int main() {
 GLuint createTexture(const char* filePath)
 {
 	//Load texture data as file
-	int width = 512, height = 512, numComponents = 4;
+	int width, height, numComponents;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* textureData = stbi_load(filePath, &width, &height, &numComponents, 0);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	unsigned char* textureData = stbi_load(TEXTURE_FILE, &width, &height, &numComponents, 0);
 
 	//wrap horizontally
 	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -277,7 +279,12 @@ GLuint createTexture(const char* filePath)
 	//when minifying use bilinear sampling
 	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+
 	glGenerateMipmap(GL_TEXTURE_2D);
+
+	stbi_image_free(textureData);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return GL_TEXTURE_2D;
 }
