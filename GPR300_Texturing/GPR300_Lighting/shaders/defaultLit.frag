@@ -55,17 +55,29 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 worldNormal)
     return ambient + diffuse + specular;
 }
 
-uniform sampler2D _GrassTexture;
+uniform sampler2D _GrassSide;
+uniform sampler2D _GrassTop;
 in vec2 UV;
+in vec3 Normal;
+uniform float _Time;
 
 void main()
 {
     vec3 normal = normalize(vs_out.WorldNormal);
 
-    vec4 color = texture(_GrassTexture, UV);
-
     vec3 lightColor = CalculateDirectionalLight(_DirLight, normal);
 
-    //FragColor = vec4(_Color * lightColor,1.0f);
-    FragColor = color;// * vec4(_Color * lightColor, 1.0f);
+    vec4 color;
+    vec2 newUV = vec2(UV.x * abs(cos(_Time)), UV.y * abs(sin(_Time)));
+
+    if (Normal.y > 0)
+    {
+        color = texture(_GrassTop, newUV);
+    }
+    else
+    {
+        color = texture(_GrassSide, newUV);
+    }
+
+    FragColor = vec4(_Color * lightColor, 1.0f) * color;
 }

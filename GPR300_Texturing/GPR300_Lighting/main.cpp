@@ -71,7 +71,8 @@ struct DirectionalLight
 
 DirectionalLight dirLight;
 
-const char* TEXTURE_FILE = "Grass.jpg";
+const char* GRASS_SIDE = "Grass.jpg";
+const char* GRASS_TOP = "GrassTop.png";
 
 int main() {
 	if (!glfwInit()) {
@@ -163,15 +164,20 @@ int main() {
 	dirLight.direction = glm::vec3(0, 1, 0);
 	dirLight.intensity = 0.5;
 
-	//texture stuff
-	GLuint texture = NULL;
-	glGenTextures(1, &texture);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	
 	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
-	texture = createTexture(TEXTURE_FILE);
+	GLuint side = createTexture(GRASS_SIDE);
+	GLuint top = createTexture(GRASS_TOP);
 
-	if (texture == NULL)
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, side);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, top);
+
+	if (side == NULL)
+		std::cout << "Failed to load texture!" << std::endl;
+
+	if (side == NULL)
 		std::cout << "Failed to load texture!" << std::endl;
 
 	while (!glfwWindowShouldClose(window)) {
@@ -186,16 +192,6 @@ int main() {
 		float time = (float)glfwGetTime();
 		deltaTime = time - lastFrameTime;
 		lastFrameTime = time;
-
-		//Texture stuff
-		//glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		
-		//_GrassTexture sampler2D uniform will use texture in unlit 0
-		litShader.setInt("_GrassTexture", 0);
-
-		/*glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(0);*/
 
 		//Draw
 		litShader.use();
@@ -213,6 +209,12 @@ int main() {
 		litShader.setFloat("_DiffuseK", diffuseK);
 		litShader.setFloat("_SpecularK", specularK);
 		litShader.setFloat("_Shininess", shininess);
+
+		//Texture stuff
+		//_GrassTexture sampler2D uniform will use texture in unlit 0
+		litShader.setFloat("_Time", time);
+		litShader.setInt("_GrassSide", 0);
+		litShader.setInt("_GrassTop", 1);
 
 		//Draw cube
 		litShader.setMat4("_Model", cubeTransform.getModelMatrix());
@@ -253,7 +255,8 @@ int main() {
 		glfwSwapBuffers(window);
 	}
 
-	glDeleteTextures(1, &texture);
+	glDeleteTextures(1, &side);
+	glDeleteTextures(2, &top);
 
 	glfwTerminate();
 	return 0;
@@ -262,10 +265,32 @@ int main() {
 //Author: Sam Fox
 GLuint createTexture(const char* filePath)
 {
+	//texture stuff
+	GLuint texture = NULL;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
 	//Load texture data as file
 	int width, height, numComponents;
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* textureData = stbi_load(TEXTURE_FILE, &width, &height, &numComponents, 0);
+	unsigned char* textureData = stbi_load(filePath, &width, &height, &numComponents, 0);
+
+	//switch statement
+	switch (numComponents)
+	{
+	case 1:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R, width, height, 0, GL_R, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 2:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 3:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 4:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+		break;
+	}
 
 	//wrap horizontally
 	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -278,15 +303,11 @@ GLuint createTexture(const char* filePath)
 
 	//when minifying use bilinear sampling
 	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	stbi_image_free(textureData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return GL_TEXTURE_2D;
+	return texture;
 }
 
 //Author: Eric Winebrenner
