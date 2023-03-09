@@ -75,6 +75,7 @@ float pointLightIntensity = 0.5;
 float range = 10;
 
 const char* TEXTURE = "./PavingStones130_1K-JPG/PavingStones130_1K_Color.jpg";
+const char* NORMAL_MAP = "./PavingStones130_1K-JPG/PavingStones130_1K_NormalGL.jpg";
 
 int main() {
 	if (!glfwInit()) {
@@ -160,17 +161,20 @@ int main() {
 
 	pointLight.position = glm::vec3(0, 5, 0);
 	pointLight.intensity = pointLightIntensity;
-	pointLight.color = glm::vec3(1, 0, 0);
+	pointLight.color = glm::vec3(1, 1, 1);
 	pointLight.range = range;
 
 	
 	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
 	GLuint texture = createTexture(TEXTURE);
+	GLuint normalMap = createTexture(NORMAL_MAP);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, normalMap);
 
-	if (texture == NULL)
+	if (texture == NULL || normalMap == NULL)
 		std::cout << "Failed to load texture!" << std::endl;
 
 	while (!glfwWindowShouldClose(window)) {
@@ -209,6 +213,7 @@ int main() {
 		//_GrassTexture sampler2D uniform will use texture in unlit 0
 		litShader.setFloat("_Time", time);
 		litShader.setInt("_Texture", 0);
+		litShader.setInt("_NormalMap", 1);
 
 		//Draw cube
 		litShader.setMat4("_Model", cubeTransform.getModelMatrix());

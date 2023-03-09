@@ -12,8 +12,11 @@ uniform vec3 _Color; //material color
 
 in struct Vertex
 {
+    vec3 Normal;
     vec3 WorldNormal; // fragment normal in world space
     vec3 WorldPosition; // fragment position in world space
+    vec2 UV;
+    mat3 TBN;
 }vs_out;
 
 struct PointLight
@@ -70,17 +73,18 @@ vec3 CalculatePointLight(PointLight light, vec3 worldNormal)
 }
 
 uniform sampler2D _Texture;
-in vec2 UV;
-in vec3 Normal;
+uniform sampler2D _NormalMap;
 uniform float _Time;
 
 void main()
 {
-    vec3 normal = normalize(vs_out.WorldNormal);
+    //convert to [-1,1] range
+    vec3 normal = (texture(_NormalMap, vs_out.UV).rgb * 2) - 1;
+    normal = vs_out.TBN * normal;
 
-    vec3 lightColor = CalculatePointLight(_PointLight, vs_out.WorldNormal);
+    vec3 lightColor = CalculatePointLight(_PointLight, normal);
 
-    vec4 color = texture(_Texture, UV);
+    vec4 color = texture(_Texture, vs_out.UV);
 
     FragColor = vec4(_Color * lightColor, 1.0f) * color;
 }
