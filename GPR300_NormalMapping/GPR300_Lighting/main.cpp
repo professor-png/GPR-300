@@ -74,6 +74,8 @@ PointLight pointLight;
 float pointLightIntensity = 1.0;
 float range = 10;
 
+float normalMapIntensity = 1.0f;
+
 //const char* TEXTURE = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_Color.jpg";
 //const char* NORMAL_MAP = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_NormalGL.jpg";
 const char* TEXTURE = "./PavingStones130_1K-JPG/PavingStones130_1K_Color.jpg";
@@ -210,7 +212,8 @@ int main() {
 		litShader.setFloat("_DiffuseK", diffuseK);
 		litShader.setFloat("_SpecularK", specularK);
 		litShader.setFloat("_Shininess", shininess);
-
+		litShader.setFloat("_NormalIntensity", normalMapIntensity);
+		
 		//Texture stuff
 		//_GrassTexture sampler2D uniform will use texture in unlit 0
 		litShader.setFloat("_Time", time);
@@ -251,6 +254,8 @@ int main() {
 		ImGui::SliderFloat("Range", &range, 0.1, 10);
 		ImGui::DragFloat3("Position", &pointLight.position.x);
 		ImGui::DragFloat3("Color", &pointLight.color.x);
+
+		ImGui::SliderFloat("Normal Map Intensity", &normalMapIntensity, 0, 1);
 
 		lightTransform.position = pointLight.position;
 

@@ -9,6 +9,7 @@ uniform float _Shininess;
 //From application...
 uniform vec3 _CameraPos;
 uniform vec3 _Color; //material color
+uniform float _NormalIntensity;
 
 in struct Vertex
 {
@@ -80,6 +81,7 @@ void main()
 {
     //convert to [-1,1] range
     vec3 normal = (texture(_NormalMap, vs_out.UV).rgb * 2) - 1;
+    normal *= vec3(_NormalIntensity, _NormalIntensity, 1); // apply intensity while keeping z direction
     //normal = vs_out.TBN * normal;
 
     vec3 lightColor = CalculatePointLight(_PointLight, normal);
