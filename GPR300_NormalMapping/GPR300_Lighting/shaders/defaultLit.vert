@@ -24,8 +24,16 @@ void main(){
     vs_out.Normal = vNormal;
     vs_out.UV = vTexCoord;
 
-    vec3 bitan = cross(vs_out.WorldNormal, vTangent);
-    vs_out.TBN = mat3(vTangent, bitan, vs_out.WorldNormal);
+	//Used https://learnopengl.com/Advanced-Lighting/Normal-Mapping as example
+    vec3 T = normalize(vec3(_Model * vec4(vTangent, 0.0)));
+
+    vec3 bitan = cross(vs_out.Normal, vTangent);
+
+    vec3 B = normalize(vec3(_Model * vec4(bitan, 0.0)));
+    vec3 N = normalize(vec3(_Model * vec4(vs_out.Normal, 0.0)));
+
+    vs_out.TBN = mat3(T, B, N);
+    vs_out.TBN = mat3(transpose(inverse(_Model))) * vs_out.TBN;
 
     gl_Position = _Projection * _View * _Model * vec4(vPos,1);
 }

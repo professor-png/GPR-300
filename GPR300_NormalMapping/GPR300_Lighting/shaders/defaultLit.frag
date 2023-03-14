@@ -80,7 +80,7 @@ void main()
 {
     //convert to [-1,1] range
     vec3 normal = (texture(_NormalMap, vs_out.UV).rgb * 2) - 1;
-    normal = vs_out.TBN * normal;
+    //normal = vs_out.TBN * normal;
 
     vec3 lightColor = CalculatePointLight(_PointLight, normal);
 

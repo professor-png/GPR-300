@@ -71,9 +71,11 @@ struct PointLight
 };
 
 PointLight pointLight;
-float pointLightIntensity = 0.5;
+float pointLightIntensity = 1.0;
 float range = 10;
 
+//const char* TEXTURE = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_Color.jpg";
+//const char* NORMAL_MAP = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_NormalGL.jpg";
 const char* TEXTURE = "./PavingStones130_1K-JPG/PavingStones130_1K_Color.jpg";
 const char* NORMAL_MAP = "./PavingStones130_1K-JPG/PavingStones130_1K_NormalGL.jpg";
 
