@@ -123,7 +123,7 @@ int main() {
 	Shader framebufferShader("shaders/framebuffer.vert", "shaders/framebuffer.frag");
 
 	ew::MeshData quadMeshData;
-	ew::createQuad(SCREEN_WIDTH, SCREEN_HEIGHT, quadMeshData);
+	ew::createQuad(2, 2, quadMeshData);
 	ew::Mesh quadMesh(&quadMeshData);
 
 	ew::MeshData cubeMeshData;
@@ -175,6 +175,18 @@ int main() {
 	pointLight.color = glm::vec3(1, 1, 1);
 	pointLight.range = range;
 
+	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
+	GLuint texture = createTexture(TEXTURE);
+	GLuint normalMap = createTexture(NORMAL_MAP);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, normalMap);
+
+	if (texture == NULL || normalMap == NULL)
+		std::cout << "Failed to load texture!" << std::endl;
+
 	// Create Frame Buffer Object
 	unsigned int fbo;
 	glGenFramebuffers(1, &fbo);
@@ -184,10 +196,11 @@ int main() {
 	unsigned int fbTexture;
 	glGenTextures(1, &fbTexture);
 	glBindTexture(GL_TEXTURE_2D, fbTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, fbTexture, 0);
 
 	// Create Render Buffer Object
 	unsigned int rbo;
@@ -201,27 +214,18 @@ int main() {
 	if (fboStatus != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "Framebuffer error: " << fboStatus << std::endl;
 
-	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
-	GLuint texture = createTexture(TEXTURE);
-	GLuint normalMap = createTexture(NORMAL_MAP);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, normalMap);
-
-	if (texture == NULL || normalMap == NULL)
-		std::cout << "Failed to load texture!" << std::endl;
-
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
-		
+
+		glViewport(0, 0, /*SCREEN_WIDTH*/2, /*SCREEN_HEIGHT*/2);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-		glViewport(0, 0, 512, 512);
 		glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
+
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+		glDrawBuffers(2, buffers);
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -281,14 +285,14 @@ int main() {
 		sphereMesh.draw();
 
 		// Bind the default framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the framebuffer rectangle
 		framebufferShader.use();
-		framebufferShader.setInt("screenTexture", GL_TEXTURE_2D);
+		framebufferShader.setInt("screenTexture", fbTexture);
 		quadMesh.draw();
 
 		//Draw UI
