@@ -81,6 +81,9 @@ float normalMapIntensity = 1.0f;
 const char* TEXTURE = "./PavingStones130_1K-JPG/PavingStones130_1K_Color.jpg";
 const char* NORMAL_MAP = "./PavingStones130_1K-JPG/PavingStones130_1K_NormalGL.jpg";
 
+bool usePost = false;
+int currentEffect = 0;
+
 int main() {
 	if (!glfwInit()) {
 		printf("glfw failed to init");
@@ -190,24 +193,24 @@ int main() {
 	// Create Frame Buffer Object
 	unsigned int fbo;
 	glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
 	// Create Framebuffer Texture
 	unsigned int fbTexture;
 	glGenTextures(1, &fbTexture);
 	glBindTexture(GL_TEXTURE_2D, fbTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbTexture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, fbTexture, 0);
 
 	// Create Render Buffer Object
 	unsigned int rbo;
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, SCREEN_WIDTH, SCREEN_HEIGHT);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbTexture, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 	// Error checking framebuffer
 	GLenum fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -217,7 +220,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 
-		glViewport(0, 0, /*SCREEN_WIDTH*/2, /*SCREEN_HEIGHT*/2);
+		glViewport(0, 0, SCREEN_WIDTH/*2*/, SCREEN_HEIGHT/*2*/);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -285,14 +288,19 @@ int main() {
 		sphereMesh.draw();
 
 		// Bind the default framebuffer
-		glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the framebuffer rectangle
 		framebufferShader.use();
-		framebufferShader.setInt("screenTexture", fbTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, fbTexture);
+		framebufferShader.setInt("_ApplyEffect", (int)usePost);
+		framebufferShader.setInt("_CurrentEffect", currentEffect);
+		framebufferShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
+		framebufferShader.setFloat("_ScreenHeight", SCREEN_HEIGHT);
+		framebufferShader.setInt("_ScreenTexture", 1);
 		quadMesh.draw();
 
 		//Draw UI
@@ -308,6 +316,28 @@ int main() {
 		ImGui::DragFloat3("Color", &pointLight.color.x);
 
 		ImGui::SliderFloat("Normal Map Intensity", &normalMapIntensity, 0, 1);
+
+		ImGui::Checkbox("Apply Post Processing?", &usePost);
+		ImGui::SliderInt("Post Processing Effect", &currentEffect, 0, 3);
+		std::string effectName;
+
+		switch (currentEffect)
+		{
+		case 0:
+			effectName = "Grey Scale";
+			break;
+		case 1:
+			effectName = "Edge Detection";
+			break;
+		case 2:
+			effectName = "Inverse";
+			break;
+		case 3:
+			effectName = "Deep Fried Like";
+			break;
+		}
+
+		ImGui::Text(effectName.c_str());
 
 		lightTransform.position = pointLight.position;
 
