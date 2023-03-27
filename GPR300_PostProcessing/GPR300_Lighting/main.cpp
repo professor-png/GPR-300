@@ -197,6 +197,7 @@ int main() {
 	// Create Framebuffer Texture
 	unsigned int fbTexture;
 	glGenTextures(1, &fbTexture);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, fbTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -293,13 +294,11 @@ int main() {
 
 		// Draw the framebuffer rectangle
 		framebufferShader.use();
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, fbTexture);
 		framebufferShader.setInt("_ApplyEffect", (int)usePost);
 		framebufferShader.setInt("_CurrentEffect", currentEffect);
 		framebufferShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
 		framebufferShader.setFloat("_ScreenHeight", SCREEN_HEIGHT);
-		framebufferShader.setInt("_ScreenTexture", 1);
+		framebufferShader.setInt("_ScreenTexture", 2);
 		quadMesh.draw();
 
 		//Draw UI
