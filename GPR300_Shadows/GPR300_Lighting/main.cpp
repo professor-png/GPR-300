@@ -39,6 +39,9 @@ float deltaTime;
 int SCREEN_WIDTH = 1080;
 int SCREEN_HEIGHT = 720;
 
+int SHADOW_MAP_WIDTH = 1080;
+int SHADOW_MAP_HEIGHT = 720;
+
 double prevMouseX;
 double prevMouseY;
 bool firstMouseInput = false;
@@ -65,7 +68,7 @@ bool wireFrame = false;
 
 struct DirectionalLight
 {
-	glm::vec3 direction;
+	glm::vec3 direction = glm::vec3(0,-1,0);
 	glm::vec3 color;
 	float intensity = 0;
 };
@@ -198,13 +201,15 @@ int main() {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Create Framebuffer Texture
 	unsigned int dbTexture;
 	glGenTextures(1, &dbTexture);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, dbTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_MAP_WIDTH, SHADOW_MAP_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -241,49 +246,9 @@ int main() {
 		deltaTime = time - lastFrameTime;
 		lastFrameTime = time;
 
-		//Draw
-		/*litShader.use();
-		litShader.setMat4("_Projection", camera.getProjectionMatrix());
-		litShader.setMat4("_View", camera.getViewMatrix());
-		litShader.setVec3("_Color", materialColor);
-
-		dirLight.intensity = lightIntensity;
-		litShader.setVec3("_Light.color", dirLight.color);
-		litShader.setVec3("_Light.direction", glm::normalize(dirLight.direction));
-		litShader.setFloat("_Light.intensity", dirLight.intensity);
-
-		litShader.setVec3("_CameraPos", camera.getPosition());
-		litShader.setFloat("_AmbientK", ambientK);
-		litShader.setFloat("_DiffuseK", diffuseK);
-		litShader.setFloat("_SpecularK", specularK);
-		litShader.setFloat("_Shininess", shininess);
-		litShader.setFloat("_NormalIntensity", normalMapIntensity);
-		
-		//Texture stuff
-		//_GrassTexture sampler2D uniform will use texture in unlit 0
-		litShader.setFloat("_Time", time);
-		litShader.setInt("_Texture", 0);
-		litShader.setInt("_NormalMap", 1);
-
-		//Draw cube
-		litShader.setMat4("_Model", cubeTransform.getModelMatrix());
-		cubeMesh.draw();
-
-		//Draw sphere
-		litShader.setMat4("_Model", sphereTransform.getModelMatrix());
-		sphereMesh.draw();
-
-		//Draw cylinder
-		litShader.setMat4("_Model", cylinderTransform.getModelMatrix());
-		cylinderMesh.draw();
-
-		//Draw plane
-		litShader.setMat4("_Model", planeTransform.getModelMatrix());
-		planeMesh.draw();*/
-
 		float near_plane = 1.0f, far_plane = 7.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f),
+		glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/,
 											glm::vec3(0),
 											glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -296,36 +261,55 @@ int main() {
 		renderObjectInScene(depthShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(depthShader, planeTransform, planeMesh);
 
-		// Bind the default framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
-		glClear(GL_COLOR_BUFFER_BIT);
-
 		litShader.use();
 		litShader.setMat4("_Projection", camera.getProjectionMatrix());
 		litShader.setMat4("_View", camera.getViewMatrix());
 		litShader.setVec3("_Color", materialColor);
 		litShader.setVec3("_ViewPos", camera.getPosition());
-		litShader.setVec3("_LightPos", glm::vec3(-2.0f, 4.0f, -1.0f));
+		litShader.setVec3("_LightPos", glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/);
 		litShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 		litShader.setInt("_DiffuseTexture", 0);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, dbTexture);
 		litShader.setInt("_ShadowMap", 3);
-		
+
+		dirLight.intensity = lightIntensity;
+		litShader.setVec3("_Light.color", dirLight.color);
+		litShader.setVec3("_Light.direction", glm::normalize(dirLight.direction));
+		litShader.setFloat("_Light.intensity", dirLight.intensity);
+
+		litShader.setVec3("_CameraPos", camera.getPosition());
+		litShader.setFloat("_AmbientK", ambientK);
+		litShader.setFloat("_DiffuseK", diffuseK);
+		litShader.setFloat("_SpecularK", specularK);
+		litShader.setFloat("_Shininess", shininess);
+		litShader.setFloat("_NormalIntensity", normalMapIntensity);
+
+		litShader.setFloat("_Time", time);
+		litShader.setInt("_Texture", 0);
+		litShader.setInt("_NormalMap", 1);
+
 		renderObjectInScene(litShader, cubeTransform, cubeMesh);
 		renderObjectInScene(litShader, sphereTransform, sphereMesh);
 		renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(litShader, planeTransform, planeMesh);
 
+		// Bind the default framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+		glClear(GL_COLOR_BUFFER_BIT);
+
 		// Draw the framebuffer rectangle
-		/*framebufferShader.use();
+		framebufferShader.use();
 		framebufferShader.setInt("_ApplyEffect", (int)usePost);
 		framebufferShader.setInt("_CurrentEffect", currentEffect);
 		framebufferShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
 		framebufferShader.setFloat("_ScreenHeight", SCREEN_HEIGHT);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, fbTexture);
 		framebufferShader.setInt("_ScreenTexture", 2);
-		quadMesh.draw();*/
+		quadMesh.draw();
 
 		//Draw UI
 		ImGui::Begin("Settings");
