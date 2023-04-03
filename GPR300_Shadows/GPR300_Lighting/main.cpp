@@ -229,7 +229,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 
-		glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		//glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -260,6 +260,44 @@ int main() {
 		renderObjectInScene(depthShader, sphereTransform, sphereMesh);
 		renderObjectInScene(depthShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(depthShader, planeTransform, planeMesh);
+
+		//litShader.use();
+		//litShader.setMat4("_Projection", camera.getProjectionMatrix());
+		//litShader.setMat4("_View", camera.getViewMatrix());
+		//litShader.setVec3("_Color", materialColor);
+		//litShader.setVec3("_ViewPos", camera.getPosition());
+		//litShader.setVec3("_LightPos", glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/);
+		//litShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
+		//litShader.setInt("_DiffuseTexture", 0);
+		//glActiveTexture(GL_TEXTURE3);
+		//glBindTexture(GL_TEXTURE_2D, dbTexture);
+		//litShader.setInt("_ShadowMap", 3);
+
+		//dirLight.intensity = lightIntensity;
+		//litShader.setVec3("_Light.color", dirLight.color);
+		//litShader.setVec3("_Light.direction", glm::normalize(dirLight.direction));
+		//litShader.setFloat("_Light.intensity", dirLight.intensity);
+
+		//litShader.setVec3("_CameraPos", camera.getPosition());
+		//litShader.setFloat("_AmbientK", ambientK);
+		//litShader.setFloat("_DiffuseK", diffuseK);
+		//litShader.setFloat("_SpecularK", specularK);
+		//litShader.setFloat("_Shininess", shininess);
+		//litShader.setFloat("_NormalIntensity", normalMapIntensity);
+
+		//litShader.setFloat("_Time", time);
+		//litShader.setInt("_Texture", 0);
+		//litShader.setInt("_NormalMap", 1);
+
+		//renderObjectInScene(litShader, cubeTransform, cubeMesh);
+		//renderObjectInScene(litShader, sphereTransform, sphereMesh);
+		//renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
+		//renderObjectInScene(litShader, planeTransform, planeMesh);
+
+		// Bind the default framebuffer
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		litShader.use();
 		litShader.setMat4("_Projection", camera.getProjectionMatrix());
@@ -294,13 +332,8 @@ int main() {
 		renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(litShader, planeTransform, planeMesh);
 
-		// Bind the default framebuffer
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
-		glClear(GL_COLOR_BUFFER_BIT);
-
 		// Draw the framebuffer rectangle
-		framebufferShader.use();
+		/*framebufferShader.use();
 		framebufferShader.setInt("_ApplyEffect", (int)usePost);
 		framebufferShader.setInt("_CurrentEffect", currentEffect);
 		framebufferShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
@@ -309,7 +342,7 @@ int main() {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, fbTexture);
 		framebufferShader.setInt("_ScreenTexture", 2);
-		quadMesh.draw();
+		quadMesh.draw();*/
 
 		//Draw UI
 		ImGui::Begin("Settings");
