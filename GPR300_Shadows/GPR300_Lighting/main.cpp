@@ -74,17 +74,14 @@ struct DirectionalLight
 };
 
 DirectionalLight dirLight;
+glm::vec3 lightPosition;
+float lightDistance = 10;
 float lightIntensity = 1;
 
-float normalMapIntensity = 1.0f;
+float minBias = 0.005f;
+float maxBias = 0.05f;
 
-//const char* TEXTURE = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_Color.jpg";
-//const char* NORMAL_MAP = "./CorrugatedSteel007A_1K-JPG/CorrugatedSteel007A_1K_NormalGL.jpg";
 const char* TEXTURE = "./PavingStones130_1K-JPG/PavingStones130_1K_Color.jpg";
-const char* NORMAL_MAP = "./PavingStones130_1K-JPG/PavingStones130_1K_NormalGL.jpg";
-
-bool usePost = false;
-int currentEffect = 0;
 
 int main() {
 	if (!glfwInit()) {
@@ -179,30 +176,16 @@ int main() {
 
 	//Bind our name to GL_TEXTURE_2D to make it a 2D texture
 	GLuint texture = createTexture(TEXTURE);
-	GLuint normalMap = createTexture(NORMAL_MAP);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, normalMap);
 
-	if (texture == NULL || normalMap == NULL)
+	if (texture == NULL)
 		std::cout << "Failed to load texture!" << std::endl;
 
 	// Create Frame Buffer Object
 	unsigned int fbo;
 	glGenFramebuffers(1, &fbo);
-
-	// Create Framebuffer Texture
-	unsigned int fbTexture;
-	glGenTextures(1, &fbTexture);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, fbTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCREEN_WIDTH, SCREEN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Create Framebuffer Texture
 	unsigned int dbTexture;
@@ -216,7 +199,6 @@ int main() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbTexture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dbTexture, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
@@ -229,7 +211,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 
-		//glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -246,9 +228,9 @@ int main() {
 		deltaTime = time - lastFrameTime;
 		lastFrameTime = time;
 
-		float near_plane = 1.0f, far_plane = 7.5f;
+		float near_plane = 0.1f, far_plane = 100.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/,
+		glm::mat4 lightView = glm::lookAt(lightPosition,
 											glm::vec3(0),
 											glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -261,55 +243,18 @@ int main() {
 		renderObjectInScene(depthShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(depthShader, planeTransform, planeMesh);
 
-		//litShader.use();
-		//litShader.setMat4("_Projection", camera.getProjectionMatrix());
-		//litShader.setMat4("_View", camera.getViewMatrix());
-		//litShader.setVec3("_Color", materialColor);
-		//litShader.setVec3("_ViewPos", camera.getPosition());
-		//litShader.setVec3("_LightPos", glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/);
-		//litShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
-		//litShader.setInt("_DiffuseTexture", 0);
-		//glActiveTexture(GL_TEXTURE3);
-		//glBindTexture(GL_TEXTURE_2D, dbTexture);
-		//litShader.setInt("_ShadowMap", 3);
-
-		//dirLight.intensity = lightIntensity;
-		//litShader.setVec3("_Light.color", dirLight.color);
-		//litShader.setVec3("_Light.direction", glm::normalize(dirLight.direction));
-		//litShader.setFloat("_Light.intensity", dirLight.intensity);
-
-		//litShader.setVec3("_CameraPos", camera.getPosition());
-		//litShader.setFloat("_AmbientK", ambientK);
-		//litShader.setFloat("_DiffuseK", diffuseK);
-		//litShader.setFloat("_SpecularK", specularK);
-		//litShader.setFloat("_Shininess", shininess);
-		//litShader.setFloat("_NormalIntensity", normalMapIntensity);
-
-		//litShader.setFloat("_Time", time);
-		//litShader.setInt("_Texture", 0);
-		//litShader.setInt("_NormalMap", 1);
-
-		//renderObjectInScene(litShader, cubeTransform, cubeMesh);
-		//renderObjectInScene(litShader, sphereTransform, sphereMesh);
-		//renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
-		//renderObjectInScene(litShader, planeTransform, planeMesh);
-
 		// Bind the default framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
-		glClear(GL_COLOR_BUFFER_BIT);
+		//glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		litShader.use();
 		litShader.setMat4("_Projection", camera.getProjectionMatrix());
 		litShader.setMat4("_View", camera.getViewMatrix());
 		litShader.setVec3("_Color", materialColor);
 		litShader.setVec3("_ViewPos", camera.getPosition());
-		litShader.setVec3("_LightPos", glm::vec3(-2.0f, 4.0f, -1.0f)/*dirLight.direction*/);
+		litShader.setVec3("_LightPos", lightPosition);
 		litShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
-		litShader.setInt("_DiffuseTexture", 0);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, dbTexture);
-		litShader.setInt("_ShadowMap", 3);
 
 		dirLight.intensity = lightIntensity;
 		litShader.setVec3("_Light.color", dirLight.color);
@@ -321,28 +266,19 @@ int main() {
 		litShader.setFloat("_DiffuseK", diffuseK);
 		litShader.setFloat("_SpecularK", specularK);
 		litShader.setFloat("_Shininess", shininess);
-		litShader.setFloat("_NormalIntensity", normalMapIntensity);
 
-		litShader.setFloat("_Time", time);
 		litShader.setInt("_Texture", 0);
-		litShader.setInt("_NormalMap", 1);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, dbTexture);
+		litShader.setInt("_ShadowMap", 3);
+
+		litShader.setFloat("_MinBias", minBias);
+		litShader.setFloat("_MaxBias", maxBias);
 
 		renderObjectInScene(litShader, cubeTransform, cubeMesh);
 		renderObjectInScene(litShader, sphereTransform, sphereMesh);
 		renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
 		renderObjectInScene(litShader, planeTransform, planeMesh);
-
-		// Draw the framebuffer rectangle
-		/*framebufferShader.use();
-		framebufferShader.setInt("_ApplyEffect", (int)usePost);
-		framebufferShader.setInt("_CurrentEffect", currentEffect);
-		framebufferShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
-		framebufferShader.setFloat("_ScreenHeight", SCREEN_HEIGHT);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, fbTexture);
-		framebufferShader.setInt("_ScreenTexture", 2);
-		quadMesh.draw();*/
 
 		//Draw UI
 		ImGui::Begin("Settings");
@@ -354,30 +290,12 @@ int main() {
 		ImGui::SliderFloat("Directional Light Intensity", &dirLight.intensity, 0, 1);
 		ImGui::DragFloat3("Light Direction", &dirLight.direction.x);
 		ImGui::DragFloat3("Color", &dirLight.color.x);
+		ImGui::SliderFloat("Light Distance", &lightDistance, 5, 20);
 
-		ImGui::SliderFloat("Normal Map Intensity", &normalMapIntensity, 0, 1);
+		ImGui::SliderFloat("Min Bias Value", &minBias, 0.001f, 0.009f);
+		ImGui::SliderFloat("Max Bias Value", &maxBias, 0.01f, 0.1f);
 
-		ImGui::Checkbox("Apply Post Processing?", &usePost);
-		ImGui::SliderInt("Post Processing Effect", &currentEffect, 0, 3);
-		std::string effectName;
-
-		switch (currentEffect)
-		{
-		case 0:
-			effectName = "Grey Scale";
-			break;
-		case 1:
-			effectName = "Edge Detection";
-			break;
-		case 2:
-			effectName = "Inverse";
-			break;
-		case 3:
-			effectName = "Deep Fried Like";
-			break;
-		}
-
-		ImGui::Text(effectName.c_str());
+		lightPosition = glm::normalize(-dirLight.direction) * lightDistance;
 
 		ImGui::End();
 
