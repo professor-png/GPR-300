@@ -49,6 +49,7 @@ float ShadowCalculation(float dotLightNorm)
     float bias = max(_MaxBias * (1.0 - dotLightNorm), _MinBias);
 
     //shadow blurring
+	//https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
     float shadow = 0.0, depth;
     vec2 texelSize = 1.0 / textureSize(_ShadowMap, 0);
 
