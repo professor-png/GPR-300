@@ -24,6 +24,7 @@
 
 #include <iostream>
 
+GLuint createTexture(const char* filePath);
 void renderObjectInScene(Shader& shader, ew::Transform& transform, ew::Mesh& mesh);
 void processInput(GLFWwindow* window);
 void resizeFrameBufferCallback(GLFWwindow* window, int width, int height);
@@ -70,6 +71,11 @@ struct DirectionalLight
 };
 
 DirectionalLight dirLight;
+
+const char* HATCH_1 = "Hatch01.png";
+const char* HATCH_2 = "Hatch02.png";
+const char* HATCH_3 = "Hatch03.png";
+const char* HATCH_4 = "Hatch04.png";
 
 int main() {
 	if (!glfwInit()) {
@@ -177,6 +183,22 @@ int main() {
 	dirLight.direction = glm::vec3(0, 1, 0);
 	dirLight.intensity = 0.5;
 
+	GLuint hatch1 = createTexture(HATCH_1);
+	GLuint hatch2 = createTexture(HATCH_2);
+	GLuint hatch3 = createTexture(HATCH_3);
+	GLuint hatch4 = createTexture(HATCH_4);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hatch1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, hatch2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, hatch3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, hatch4);
+
+
+
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
 		glClearColor(bgColor.r, bgColor.g, bgColor.b, 1.0f);
@@ -224,6 +246,10 @@ int main() {
 		outlineShader.use();
 		outlineShader.setMat4("_Projection", camera.getProjectionMatrix());
 		outlineShader.setMat4("_View", camera.getViewMatrix());
+		litShader.setInt("_Hatch1", 0);
+		litShader.setInt("_Hatch2", 1);
+		litShader.setInt("_Hatch3", 2);
+		litShader.setInt("_Hatch4", 3);
 
 		renderObjectInScene(outlineShader, cubeOutlineTransform, cubeMesh);
 		renderObjectInScene(outlineShader, sphereOutlineTransform, sphereMesh);
@@ -260,6 +286,54 @@ int main() {
 	glfwTerminate();
 	return 0;
 }
+
+GLuint createTexture(const char* filePath)
+{
+	//texture stuff
+	GLuint texture = NULL;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	//Load texture data as file
+	int width, height, numComponents;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* textureData = stbi_load(filePath, &width, &height, &numComponents, 0);
+
+	//switch statement
+	switch (numComponents)
+	{
+	case 1:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R, width, height, 0, GL_R, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 2:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 3:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+		break;
+	case 4:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+		break;
+	}
+
+	//wrap horizontally
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+
+	//clamp vertically
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+	//when magnifying use nearest neighbor sampling
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	//when minifying use bilinear sampling
+	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	return texture;
+}
+
 
 //Author: Sam Fox
 void renderObjectInScene(Shader& shader, ew::Transform& transform, ew::Mesh& mesh)

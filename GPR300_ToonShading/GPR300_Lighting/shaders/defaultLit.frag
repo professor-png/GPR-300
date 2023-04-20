@@ -23,7 +23,14 @@ struct DirectionalLight
     float intensity;
 };
 
+uniform sampler2D _Hatch1;
+uniform sampler2D _Hatch2;
+uniform sampler2D _Hatch3;
+uniform sampler2D _Hatch4;
+
 uniform DirectionalLight _DirLight;
+in vec2 UV;
+
 
 vec3 CalculateAmbient(float lightIntensity, vec3 lightColor)
 {
@@ -55,11 +62,58 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 worldNormal)
     return ambient + diffuse + specular;
 }
 
+//here's Nate's fancy stuff for hatch lerping.
+//this is kind of gross. 
+struct GradientSegment
+{
+    float percent;
+    vec3 color;
+};
+
+vec3 GetHatchGradient(float ratio) 
+{    
+    if (ratio > 1) 
+    {
+        ratio = 1;
+    }
+    
+    GradientSegment colors[4];
+    colors[0].color = texture(_Hatch1, UV).xyz;
+    colors[0].percent = 0.3;
+
+    colors[1].color = texture(_Hatch1, UV).xyz;
+    colors[1].percent = 0.55;
+
+    colors[2].color = texture(_Hatch2, UV).xyz;
+    colors[2].percent = 0.7;
+
+    colors[3].color = texture(_Hatch4, UV).xyz;
+    colors[3].percent = 1;
+    
+    vec3 finalColor = vec3(0, 0, 0);
+    //lerp.
+
+    for (int i = 0; i < 3; i++)
+    {
+        if (colors[i].percent <= ratio && colors[i + 1].percent >= ratio)
+        {
+            float lerpTime = (ratio - colors[i].percent) / (colors[i + 1].percent - colors[i].percent);
+            finalColor.r = colors[i].color.x + lerpTime * (colors[i + 1].color.x - colors[i].color.x);
+            finalColor.g = colors[i].color.y + lerpTime * (colors[i + 1].color.y - colors[i].color.y);
+            finalColor.b = colors[i].color.z + lerpTime * (colors[i + 1].color.z - colors[i].color.z);
+            return finalColor;
+        }
+    }
+    return finalColor;
+}
+
 void main()
 {
     vec3 normal = normalize(vs_out.WorldNormal);
 
     vec3 lightColor = CalculateDirectionalLight(_DirLight, normal);
+    float hatchPow = length(lightColor);
+    vec3 hatchColor = GetHatchGradient(hatchPow);
 
-    FragColor = vec4(_Color * lightColor,1.0f);
+    FragColor = vec4(hatchColor, 1.0f);
 }
