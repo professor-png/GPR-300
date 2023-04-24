@@ -43,6 +43,13 @@ double prevMouseX;
 double prevMouseY;
 bool firstMouseInput = false;
 
+float hatchThreshold1 = 0.3f;
+float hatchThreshold2 = 0.55f;
+float hatchThreshold3 = 0.7f;
+float hatchThreshold4 = 1.0f;
+
+float hatchTiling = 3;
+
 /* Button to lock / unlock mouse
 * 1 = right, 2 = middle
 * Mouse will start locked. Unlock it to use UI
@@ -251,6 +258,17 @@ int main() {
 		litShader.setInt("_Hatch2", 1);
 		litShader.setInt("_Hatch3", 2);
 		litShader.setInt("_Hatch4", 3);
+		litShader.setFloat("_ScreenWidth", SCREEN_WIDTH);
+		litShader.setFloat("_ScreenHeight", SCREEN_HEIGHT);
+
+		litShader.setFloat("_Threshold1", hatchThreshold1);
+		litShader.setFloat("_Threshold2", hatchThreshold2);
+		litShader.setFloat("_Threshold3", hatchThreshold3);
+		litShader.setFloat("_Threshold4", hatchThreshold4);
+
+		litShader.setFloat("_Tiling", hatchTiling);
+
+
 
 		renderObjectInScene(outlineShader, cubeOutlineTransform, cubeMesh);
 		renderObjectInScene(outlineShader, sphereOutlineTransform, sphereMesh);
@@ -267,6 +285,14 @@ int main() {
 		ImGui::SliderFloat("Material Diffuse K", &diffuseK, 0, 1);
 		ImGui::SliderFloat("Material Specular K", &specularK, 0, 1);
 		ImGui::SliderFloat("Material Shininess", &shininess, 1, 500);
+
+		ImGui::SliderFloat("Hatch Tiling", &hatchTiling, 0.1, 20);
+
+		ImGui::SliderFloat("Hatch 1 Threshold", &hatchThreshold1, 0, 1);
+		ImGui::SliderFloat("Hatch 2 Threshold", &hatchThreshold2, 0, 1);
+		ImGui::SliderFloat("Hatch 3 Threshold", &hatchThreshold3, 0, 1);
+		ImGui::SliderFloat("Hatch 4 Threshold", &hatchThreshold4, 0, 1);
+
 
 		if (ImGui::CollapsingHeader("Directional Light"))
 		{

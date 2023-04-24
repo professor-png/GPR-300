@@ -28,6 +28,18 @@ uniform sampler2D _Hatch2;
 uniform sampler2D _Hatch3;
 uniform sampler2D _Hatch4;
 
+uniform float _ScreenWidth;
+uniform float _ScreenHeight;
+uniform float _Tiling;
+
+//threshold settings
+
+uniform float _Threshold1;
+uniform float _Threshold2;
+uniform float _Threshold3;
+uniform float _Threshold4;
+
+
 uniform DirectionalLight _DirLight;
 in vec2 UV;
 
@@ -79,16 +91,16 @@ vec3 GetHatchGradient(float ratio, vec2 screenUV)
     
     GradientSegment colors[4];
     colors[0].color = texture(_Hatch1, screenUV).xyz;
-    colors[0].percent = 0.3;
+    colors[0].percent = _Threshold1;
 
     colors[1].color = texture(_Hatch1, screenUV).xyz;
-    colors[1].percent = 0.55;
+    colors[1].percent =_Threshold2;
 
     colors[2].color = texture(_Hatch2, screenUV).xyz;
-    colors[2].percent = 0.7;
+    colors[2].percent = _Threshold3;
 
     colors[3].color = texture(_Hatch4, screenUV).xyz;
-    colors[3].percent = 1;
+    colors[3].percent = _Threshold4;
     
     vec3 finalColor = vec3(0, 0, 0);
     //lerp.
@@ -111,7 +123,7 @@ void main()
 {
     vec3 normal = normalize(vs_out.WorldNormal);
     vec2 screenUV = gl_FragCoord.xy;
-    vec2 tiledScreenUV = screenUV / (2 * -1.0f);
+    vec2 tiledScreenUV = _Tiling * (screenUV / vec2(_ScreenWidth, _ScreenHeight));
     vec3 lightColor = CalculateDirectionalLight(_DirLight, normal);
     float hatchPow = length(lightColor);
     vec3 hatchColor = GetHatchGradient(hatchPow, tiledScreenUV);
