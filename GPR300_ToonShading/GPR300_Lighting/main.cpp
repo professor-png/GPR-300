@@ -24,6 +24,9 @@
 
 #include <iostream>
 
+#include <queue>
+
+void DrawOutlines(ew::Transform transforms[], ew::Transform outlineTransforms[], ew::Mesh* meshes[], Shader& lit, Shader& outline);
 GLuint createTexture(const char* filePath);
 void renderObjectInScene(Shader& shader, ew::Transform& transform, ew::Mesh& mesh);
 void processInput(GLFWwindow* window);
@@ -78,6 +81,9 @@ struct DirectionalLight
 };
 
 DirectionalLight dirLight;
+
+glm::vec3 outlineColor = glm::vec3(0.25, 1, 0.5);
+float outlineScale = 1.08f;
 
 const char* HATCH_1 = "Hatch01.png";
 const char* HATCH_2 = "Hatch02.png";
@@ -176,15 +182,15 @@ int main() {
 	ew::Transform cylinderOutlineTransform;
 
 	cubeOutlineTransform.position = cubeTransform.position;
-	cubeOutlineTransform.scale = cubeTransform.scale * 1.08f;
+	cubeOutlineTransform.scale = cubeTransform.scale * outlineScale;
 	sphereOutlineTransform.position = sphereTransform.position;
-	sphereOutlineTransform.scale = sphereTransform.scale * 1.08f;
+	sphereOutlineTransform.scale = sphereTransform.scale * outlineScale;
 
 	planeOutlineTransform.position = planeTransform.position;
-	planeOutlineTransform.scale = planeTransform.scale * 1.08f;
+	planeOutlineTransform.scale = planeTransform.scale * outlineScale;
 
 	cylinderOutlineTransform.position = cylinderTransform.position;
-	cylinderOutlineTransform.scale = cylinderTransform.scale * 1.08f;
+	cylinderOutlineTransform.scale = cylinderTransform.scale * outlineScale;
 
 	dirLight.color = glm::vec3(1, 1, 1);
 	dirLight.direction = glm::vec3(0, 1, 0);
@@ -204,7 +210,10 @@ int main() {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, hatch4);
 
-
+	std::priority_queue<float> distances;
+	ew::Transform order[4];
+	ew::Transform outlines[4];
+	ew::Mesh* meshes[4] = {&cubeMesh};
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -240,20 +249,6 @@ int main() {
 		litShader.setFloat("_SpecularK", specularK);
 		litShader.setFloat("_Shininess", shininess);
 
-		renderObjectInScene(litShader, cubeTransform, cubeMesh);
-		renderObjectInScene(litShader, sphereTransform, sphereMesh);
-		renderObjectInScene(litShader, cylinderTransform, cylinderMesh);
-		renderObjectInScene(litShader, planeTransform, planeMesh);
-
-		//deactivate stencil
-		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-		glStencilMask(0x00);
-		glDisable(GL_DEPTH_TEST);
-
-		outlineShader.use();
-		outlineShader.setMat4("_Projection", camera.getProjectionMatrix());
-		outlineShader.setMat4("_View", camera.getViewMatrix());
-		
 		litShader.setInt("_Hatch1", 0);
 		litShader.setInt("_Hatch2", 1);
 		litShader.setInt("_Hatch3", 2);
@@ -265,19 +260,44 @@ int main() {
 		litShader.setFloat("_Threshold2", hatchThreshold2);
 		litShader.setFloat("_Threshold3", hatchThreshold3);
 		litShader.setFloat("_Threshold4", hatchThreshold4);
-
 		litShader.setFloat("_Tiling", hatchTiling);
 
+		distances.push(glm::distance(cubeTransform.position, camera.getPosition()));
+		distances.push(glm::distance(sphereTransform.position, camera.getPosition()));
+		distances.push(glm::distance(cylinderTransform.position, camera.getPosition()));
+		distances.push(glm::distance(planeTransform.position, camera.getPosition()));
 
+		for (int i = 3; i >= 0; i--)
+		{
+			if (distances.top() == glm::distance(cubeTransform.position, camera.getPosition()))
+			{
+				order[i] = cubeTransform;
+				outlines[i] = cubeOutlineTransform;
+				meshes[i] = &cubeMesh;
+			}
+			else if (distances.top() == glm::distance(sphereTransform.position, camera.getPosition()))
+			{
+				order[i] = sphereTransform;
+				outlines[i] = sphereOutlineTransform;
+				meshes[i] = &sphereMesh;
+			}
+			else if (distances.top() == glm::distance(cylinderTransform.position, camera.getPosition()))
+			{
+				order[i] = cylinderTransform;
+				outlines[i] = cylinderOutlineTransform;
+				meshes[i] = &cylinderMesh;
+			}
+			else if (distances.top() == glm::distance(planeTransform.position, camera.getPosition()))
+			{
+				order[i] = planeTransform;
+				outlines[i] = planeOutlineTransform;
+				meshes[i] = &planeMesh;
+			}
 
-		renderObjectInScene(outlineShader, cubeOutlineTransform, cubeMesh);
-		renderObjectInScene(outlineShader, sphereOutlineTransform, sphereMesh);
-		renderObjectInScene(outlineShader, cylinderOutlineTransform, cylinderMesh);
-		renderObjectInScene(outlineShader, planeOutlineTransform, planeMesh);
+			distances.pop();
+		}
 
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		glEnable(GL_DEPTH_TEST);
+		DrawOutlines(order, outlines, meshes, litShader, outlineShader);
 
 		//Draw UI
 		ImGui::Begin("Settings");
@@ -301,6 +321,17 @@ int main() {
 			ImGui::SliderFloat("Directional Light Intensity", &dirLight.intensity, 0, 1);
 		}
 
+		if (ImGui::CollapsingHeader("Outline Stuff"))
+		{
+			ImGui::ColorEdit3("Outline Color", &outlineColor.r);
+			ImGui::SliderFloat("Outline Scale", &outlineScale, 1.01, 2);
+		}
+
+		cubeOutlineTransform.scale = cubeTransform.scale * outlineScale;
+		sphereOutlineTransform.scale = sphereTransform.scale * outlineScale;
+		cylinderOutlineTransform.scale = cylinderTransform.scale * outlineScale;
+		planeOutlineTransform.scale = planeTransform.scale * outlineScale;
+
 		ImGui::End();
 
 		ImGui::Render();
@@ -312,6 +343,35 @@ int main() {
 
 	glfwTerminate();
 	return 0;
+}
+
+void DrawOutlines(ew::Transform transforms[], ew::Transform outlineTransforms[], ew::Mesh* meshes[], Shader& lit, Shader& outline)
+{
+	for (int i = 0; i < 4; i++)
+	{
+		//activate stencil
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
+
+		lit.use();
+		renderObjectInScene(lit, transforms[i], *meshes[i]);
+
+		//deactivate stencil
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		//glDisable(GL_DEPTH_TEST);
+
+		outline.use();
+		outline.setMat4("_Projection", camera.getProjectionMatrix());
+		outline.setMat4("_View", camera.getViewMatrix());
+		outline.setVec3("_OutlineColor", outlineColor);
+
+		renderObjectInScene(outline, outlineTransforms[i], *meshes[i]);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		//glEnable(GL_DEPTH_TEST);
+	}
 }
 
 GLuint createTexture(const char* filePath)
