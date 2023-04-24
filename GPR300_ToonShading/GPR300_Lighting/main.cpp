@@ -246,10 +246,11 @@ int main() {
 		outlineShader.use();
 		outlineShader.setMat4("_Projection", camera.getProjectionMatrix());
 		outlineShader.setMat4("_View", camera.getViewMatrix());
-		litShader.setInt("_Hatch1", 0);
+		//what this do?
+		/*litShader.setInt("_Hatch1", 0);
 		litShader.setInt("_Hatch2", 1);
 		litShader.setInt("_Hatch3", 2);
-		litShader.setInt("_Hatch4", 3);
+		litShader.setInt("_Hatch4", 3);*/
 
 		renderObjectInScene(outlineShader, cubeOutlineTransform, cubeMesh);
 		renderObjectInScene(outlineShader, sphereOutlineTransform, sphereMesh);
