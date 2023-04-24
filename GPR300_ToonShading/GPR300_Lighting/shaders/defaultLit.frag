@@ -70,7 +70,7 @@ struct GradientSegment
     vec3 color;
 };
 
-vec3 GetHatchGradient(float ratio) 
+vec3 GetHatchGradient(float ratio, vec2 screenUV) 
 {    
     if (ratio > 1) 
     {
@@ -78,16 +78,16 @@ vec3 GetHatchGradient(float ratio)
     }
     
     GradientSegment colors[4];
-    colors[0].color = texture(_Hatch1, UV).xyz;
+    colors[0].color = texture(_Hatch1, screenUV).xyz;
     colors[0].percent = 0.3;
 
-    colors[1].color = texture(_Hatch1, UV).xyz;
+    colors[1].color = texture(_Hatch1, screenUV).xyz;
     colors[1].percent = 0.55;
 
-    colors[2].color = texture(_Hatch2, UV).xyz;
+    colors[2].color = texture(_Hatch2, screenUV).xyz;
     colors[2].percent = 0.7;
 
-    colors[3].color = texture(_Hatch4, UV).xyz;
+    colors[3].color = texture(_Hatch4, screenUV).xyz;
     colors[3].percent = 1;
     
     vec3 finalColor = vec3(0, 0, 0);
@@ -110,10 +110,11 @@ vec3 GetHatchGradient(float ratio)
 void main()
 {
     vec3 normal = normalize(vs_out.WorldNormal);
-
+    vec2 screenUV = gl_FragCoord.xy;
+    vec2 tiledScreenUV = screenUV / (2 * -1.0f);
     vec3 lightColor = CalculateDirectionalLight(_DirLight, normal);
     float hatchPow = length(lightColor);
-    vec3 hatchColor = GetHatchGradient(hatchPow);
+    vec3 hatchColor = GetHatchGradient(hatchPow, tiledScreenUV);
 
     FragColor = vec4(hatchColor, 1.0f);
 }
